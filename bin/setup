@@ -1,0 +1,6 @@
+#!/bin/sh
+
+docker-compose run --rm news rails db:create
+docker-compose run --rm news rake rabbit:setup
+docker-compose run --rm repatridor rails db:create db:migrate
+docker-compose run --rm repatridor rake effective_email_templates:import

@@ -9,7 +9,7 @@ services:
         RUBY_VERSION: 2.6.5
         NODE_VERSION: 13
         APP_NAME: news  
-    command: ../bin/start
+    command: ./bin/start
     volumes:
       - ./news:/app:cached
       - bundle:/.bundle
@@ -18,11 +18,12 @@ services:
       - news_modules:/app/node_modules
     env_file:
       - .env
+      - .secrets
     environment:
       VIRTUAL_HOST: news.local
       VIRTUAL_PORT: 3000
     ports:
-      - 3000
+      - '3000:3000'
     depends_on:
       - postgres
       - rabbitmq
@@ -32,6 +33,9 @@ services:
       - /tmp
     stdin_open: true
     tty: true
+  news-worker: 
+    <<: *news
+    command: "rake sneakers:run WORKERS=ActiveJob::QueueAdapters::SneakersAdapter::JobWrapper"
   repatridor: &repatridor
     build:
       context: .
@@ -40,7 +44,7 @@ services:
         RUBY_VERSION: 2.6.5
         NODE_VERSION: 13
         APP_NAME: repatridor
-    command: ../bin/start
+    command: ./bin/start
     volumes:
       - ./repatridor:/app:cached
       - bundle:/.bundle
@@ -65,8 +69,6 @@ services:
   repatridor-worker:
     <<: *repatridor
     command: "rake sneakers:run WORKERS=EventListener"
-    environment:
-      QUEUE: tasks
   nginx-proxy:
     image: jwilder/nginx-proxy:alpine
     ports:
