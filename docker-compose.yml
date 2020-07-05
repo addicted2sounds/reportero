@@ -1,0 +1,108 @@
+version: '3.4'
+
+services:
+  news: &news
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        RUBY_VERSION: 2.6.5
+        NODE_VERSION: 13
+        APP_NAME: news  
+    command: ../bin/start
+    volumes:
+      - ./news:/app:cached
+      - bundle:/.bundle
+      - news_cache:/app/tmp/cache
+      - news_packs:/app/public/packs
+      - news_modules:/app/node_modules
+    env_file:
+      - .env
+    environment:
+      VIRTUAL_HOST: news.local
+      VIRTUAL_PORT: 3000
+    ports:
+      - 3000
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+      - nginx-proxy
+    tmpfs:
+      - /tmp
+    stdin_open: true
+    tty: true
+  repatridor: &repatridor
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        RUBY_VERSION: 2.6.5
+        NODE_VERSION: 13
+        APP_NAME: repatridor
+    command: ../bin/start
+    volumes:
+      - ./repatridor:/app:cached
+      - bundle:/.bundle
+      - repatridor_cache:/app/tmp/cache
+      - repatridor_packs:/app/public/packs
+    env_file:
+      - .env
+    environment:
+      VIRTUAL_HOST: repatridor.local
+      VIRTUAL_PORT: 3000
+    ports:
+      - 3000
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+      - nginx-proxy
+    tmpfs:
+      - /tmp
+    stdin_open: true
+    tty: true
+  repatridor-worker:
+    <<: *repatridor
+    command: "rake sneakers:run WORKERS=EventListener"
+    environment:
+      QUEUE: tasks
+  nginx-proxy:
+    image: jwilder/nginx-proxy:alpine
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+  mailcatcher:
+    image: schickling/mailcatcher
+    environment:
+      VIRTUAL_HOST: mailcatcher.local
+      VIRTUAL_PORT: 1080
+  postgres:
+    image: postgres:12-alpine
+    volumes:
+      - db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgres
+  rabbitmq:
+    image: rabbitmq:3.8-management-alpine
+    ports:
+      - "15672:15672"
+      - '5672:5672'
+    environment:
+      VIRTUAL_HOST: rabbit.local
+      VIRTUAL_PORT: 15672
+  redis:
+    image: redis:5-alpine
+    volumes:
+      - redis:/data
+volumes:
+  bundle:
+  db:
+  redis:
+  news_cache:
+  news_packs:
+  news_modules:
+  repatridor_cache:
+  repatridor_packs:
+  repatridor_modules:

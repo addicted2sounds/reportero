@@ -1,0 +1,47 @@
+ARG RUBY_VERSION=2.6
+ARG NODE_VERSION=13
+
+FROM node:$NODE_VERSION-alpine as nodejs
+FROM ruby:$RUBY_VERSION-alpine
+
+ARG BUNDLE_ROOT="/.bundle"
+ARG APP_NAME
+ARG APP_ROOT="/app"
+
+COPY --from=nodejs /usr/local/bin/node /usr/local/bin/
+COPY --from=nodejs /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=nodejs /opt/ /opt/
+
+RUN ln -sf /usr/local/bin/node /usr/local/bin/nodejs \
+  && ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+  && ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+  && ln -sf /opt/yarn*/bin/yarn /usr/local/bin/yarn \
+  && ln -sf /opt/yarn*/bin/yarnpkg /usr/local/bin/yarnpkg
+
+RUN addgroup -g 1000 node \
+  && adduser -u 1000 -G node -s /bin/sh -D node \
+  && apk --update add --no-cache build-base \
+    postgresql-client postgresql-dev \
+    imagemagick imagemagick-dev \
+    libxml2 libxslt libxml2-dev libxslt-dev \
+    git \
+    tzdata \
+    bash \
+    curl-dev \
+    alpine-sdk python
+ENV LANG=C.UTF-8 \
+    GEM_HOME=$BUNDLE_ROOT/$RUBY_VERSION/$APP_NAME \
+    BUNDLE_JOBS=4 \
+    BUNDLE_RETRY=3 \
+    APP_NAME=$APP_NAME \
+    PAGER='busybox less'
+ENV BUNDLE_PATH=$GEM_HOME \
+    BUNDLE_APP_CONFIG=$GEM_HOME \
+    BUNDLE_BIN=$GEM_HOME/bin \
+    PATH=$GEM_HOME/bin:$PATH
+RUN gem update --system
+RUN gem install bundler
+RUN unset VERSION
+RUN mkdir -p /node_modules/$APP_NAME
+RUN mkdir -p $APP_ROOT
+WORKDIR $APP_ROOT

@@ -1,0 +1,7 @@
+[submodule "reportero-news"]
+	path = news
+	url = git@github.com:addicted2sounds/reportero-news.git
+
+[submodule "reportero-repatridor"]
+	path = repatridor
+	url = git@github.com:addicted2sounds/reportero-repatridor.git
