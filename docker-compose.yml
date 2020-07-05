@@ -36,6 +36,7 @@ services:
   news-worker: 
     <<: *news
     command: "rake sneakers:run WORKERS=ActiveJob::QueueAdapters::SneakersAdapter::JobWrapper"
+    ports: []
   repatridor: &repatridor
     build:
       context: .
