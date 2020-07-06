@@ -26,11 +26,12 @@ services:
       - '3000:3000'
     depends_on:
       - postgres
-      - rabbitmq
       - redis
       - nginx-proxy
+      - rabbitmq
     tmpfs:
       - /tmp
+    restart: on-failure
     stdin_open: true
     tty: true
   news-worker: 
@@ -65,6 +66,7 @@ services:
       - nginx-proxy
     tmpfs:
       - /tmp
+    restart: on-failure
     stdin_open: true
     tty: true
   repatridor-worker:
@@ -95,6 +97,11 @@ services:
     environment:
       VIRTUAL_HOST: rabbit.local
       VIRTUAL_PORT: 15672
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:15672"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
   redis:
     image: redis:5-alpine
     volumes:

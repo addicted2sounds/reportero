@@ -1,5 +1,7 @@
 #!/bin/sh
 
+docker-compose up -d rabbitmq # rabbit container should warm up till containers are built
+docker-compose build
 docker-compose run --rm news rails db:create
 docker-compose run --rm news rake rabbit:setup
 docker-compose run --rm repatridor rails db:create db:migrate
